@@ -44,15 +44,21 @@ Layout-Aware Parsing: В отличие от классических метод
 📦 Установка и запуск
 
   Клонирование репозитория:
+  
   git clone https://github.com/ScaRaBuH/code.git
+  
   cd code
 
   Настройка окружения:
+  
   pip install -r requirements.txt
 
   Запуск Ollama:
+  
   Убедитесь, что Ollama запущена и модель загружена:
+  
   ollama run qwen2.5:14b
 
   Запуск приложения:
+  
   streamlit run app.py
