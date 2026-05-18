@@ -5,71 +5,46 @@ import os
 from docling_parser import process_document
 from analyzer import get_analysis_from_qwen
 
-st.set_page_config(page_title="Универсальный Аналитик", layout="wide")
+st.set_page_config(page_title="Система анализа", layout="wide")
 
 def get_db_connection():
-    return sqlite3.connect("vpo_reports.db")
+    return sqlite3.connect("reports.db")
 
-def delete_report(report_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON")
-    cursor.execute("DELETE FROM reports WHERE id = ?", (report_id,))
-    conn.commit()
-    conn.close()
+st.title("📊 Система анализа документов")
 
-st.title("🤖 Универсальная система анализа документов")
-
-# --- Сайдбар ---
 with st.sidebar:
-    st.header("📂 Загрузка")
-    uploaded_file = st.file_uploader("Выберите PDF", type="pdf")
-    year = st.number_input("Год документа", value=2025)
+    st.header("📂 Управление данными")
+    uploaded_file = st.file_uploader("Загрузить новый документ (PDF)", type="pdf")
+    year = st.number_input("Год", value=2025)
     
-    if uploaded_file and st.button("Обработать"):
-        with st.spinner("Docling анализирует структуру..."):
-            temp_path = "temp_upload.pdf"
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            
+    if uploaded_file and st.button("Обработать и сохранить"):
+        with st.spinner("Идёт обработка документа..."):
+            temp_path = "temp.pdf"
+            with open(temp_path, "wb") as f: f.write(uploaded_file.getbuffer())
             if process_document(temp_path, year, uploaded_file.name):
-                st.success("Документ успешно добавлен!")
-                os.remove(temp_path)
+                st.success("Готово!")
                 st.rerun()
-            else:
-                st.error("Ошибка при обработке документа.")
 
     st.divider()
-    
-    # Список документов
     conn = get_db_connection()
-    reports_df = pd.read_sql_query("SELECT id, filename FROM reports", conn)
+    reports_df = pd.read_sql_query("SELECT id, filename, report_year FROM reports", conn)
     conn.close()
 
-    active_report_id = None
     if not reports_df.empty:
-        report_dict = dict(zip(reports_df['filename'], reports_df['id']))
-        selected_name = st.selectbox("Активный документ:", list(report_dict.keys()))
-        active_report_id = report_dict[selected_name]
-        
-        if st.button("🗑️ Удалить документ"):
-            delete_report(active_report_id)
-            st.rerun()
+        # Мультивыбор активных документов
+        report_options = {f"{row['filename']} ({row['report_year']})": row['id'] for _, row in reports_df.iterrows()}
+        selected_labels = st.multiselect("Выберите активные документы:", list(report_options.keys()))
+        active_ids = [report_options[label] for label in selected_labels]
     else:
-        st.info("База пуста.")
+        st.info("База данных пуста.")
+        active_ids = []
 
-# --- Основной экран ---
-if active_report_id:
-    st.subheader(f"📄 Работа с: {selected_name}")
-    user_query = st.text_input("Задайте вопрос по документу:", placeholder="Например: Какая общая численность студентов?")
+# Основной экран
+if active_ids:
+    st.subheader(f"💬 Чат по {len(active_ids)} док.")
+    user_query = st.text_input("Ваш вопрос:")
     
-    if st.button("🚀 Спросить ИИ", type="primary"):
-        if user_query:
-            with st.spinner("Qwen анализирует текст..."):
-                answer = get_analysis_from_qwen(active_report_id, user_query)
-                st.markdown("### Ответ нейросети:")
-                st.info(answer)
-        else:
-            st.warning("Введите вопрос.")
-else:
-    st.write("Загрузите или выберите документ в боковой панели для начала работы.")
+    if st.button("Выполнить запрос", type="primary"):
+        with st.spinner("Модель обробатывает запрос..."):
+            answer = get_analysis_from_qwen(active_ids, user_query)
+            st.markdown(answer)
