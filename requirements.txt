@@ -1,0 +1,13 @@
+# Основной интерфейс
+streamlit
+
+# Работа с базой данных и данными
+pandas
+sqlite3
+
+# Обработка документов и PDF
+docling
+PyMuPDF
+
+# Работа с API и сетью
+requests
