@@ -59,6 +59,10 @@ Layout-Aware Parsing: В отличие от классических метод
   
   ollama run qwen2.5:14b
 
-  Запуск приложения:
+  Запуск приложения через консоль:
   
-  streamlit run app.py
+  streamlit run app.py 
+
+  Запуск приложения через файл:
+
+  start_analyzer.bat
